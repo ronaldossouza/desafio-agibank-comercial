@@ -12,48 +12,83 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
-        
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y wget curl unzip
+    
     - name: Install Chrome and ChromeDriver
       run: |
         # Instala Chrome
         sudo apt-get update
         sudo apt-get install -y google-chrome-stable
-        
+
         # Obtém a versão do Chrome
         CHROME_VERSION=$(google-chrome --version | cut -d' ' -f3 | cut -d'.' -f1)
         echo "Detected Chrome version: $CHROME_VERSION"
-        
-        # Usa uma fonte alternativa para ChromeDriver
-        CHROMEDRIVER_VERSION=$(wget -qO- https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION)
-        
-        # Se a versão específica falhar, usa a versão mais recente
+
+        # Tenta múltiplas estratégias para obter o ChromeDriver
+        # Estratégia 1: Tenta versão específica
+        CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION")
+
+        # Estratégia 2: Se falhar, usa a versão mais recente
         if [ -z "$CHROMEDRIVER_VERSION" ]; then
-          CHROMEDRIVER_VERSION=$(wget -qO- https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
+            echo "Specific ChromeDriver version not found. Falling back to latest."
+            CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE")
         fi
-        
+
+        # Verifica se ainda não encontrou uma versão
+        if [ -z "$CHROMEDRIVER_VERSION" ]; then
+            echo "Error: Could not determine ChromeDriver version"
+            exit 1
+        fi
+
         echo "Installing ChromeDriver version: $CHROMEDRIVER_VERSION"
-        
+
         # Download e instalação
-        wget -N https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip -P ~/tmp
-        unzip ~/tmp/chromedriver_linux64.zip -d ~/tmp
+        mkdir -p ~/tmp
+        wget -N "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip" -P ~/tmp
+
+        # Verifica se o download foi bem-sucedido
+        if [ ! -f ~/tmp/chromedriver_linux64.zip ]; then
+            echo "Error: ChromeDriver download failed"
+            exit 1
+        fi
+
+        # Descompacta e move
+        unzip -o ~/tmp/chromedriver_linux64.zip -d ~/tmp
         sudo mv -f ~/tmp/chromedriver /usr/local/bin/chromedriver
         sudo chown root:root /usr/local/bin/chromedriver
         sudo chmod 0755 /usr/local/bin/chromedriver
-        
+
+        # Limpa arquivos temporários
+        rm -f ~/tmp/chromedriver_linux64.zip
+
         # Verifica a instalação
         chromedriver --version
         
-    - name: Install dependencies
+    - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install setuptools wheel
+        if [ -f requirements.txt ]; then 
+          pip install -r requirements.txt
+        fi
+        
+    - name: Install test dependencies
+      run: |
+        pip install behave selenium
         
     - name: Run tests
       run: |
         behave
+      env:
+        # Configurações de ambiente para testes
+        DISPLAY: :99

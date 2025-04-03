@@ -25,23 +25,28 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y google-chrome-stable
         
-        # Verifica a versão do Chrome e instala o ChromeDriver compatível
-        CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d. -f1)
+        # Obtém a versão do Chrome
+        CHROME_VERSION=$(google-chrome --version | cut -d' ' -f3 | cut -d'.' -f1)
         echo "Detected Chrome version: $CHROME_VERSION"
         
-        # Abordagem mais robusta para determinar a versão do ChromeDriver
-        if [ -z "$CHROME_VERSION" ]; then
-          echo "Chrome version not detected, using latest stable ChromeDriver"
-          CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE")
-        else
-          echo "Finding ChromeDriver version for Chrome $CHROME_VERSION"
-          CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION")
+        # Usa uma fonte alternativa para ChromeDriver
+        CHROMEDRIVER_VERSION=$(wget -qO- https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION)
+        
+        # Se a versão específica falhar, usa a versão mais recente
+        if [ -z "$CHROMEDRIVER_VERSION" ]; then
+          CHROMEDRIVER_VERSION=$(wget -qO- https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
         fi
         
         echo "Installing ChromeDriver version: $CHROMEDRIVER_VERSION"
-        wget -q -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip"
-        sudo unzip -o /tmp/chromedriver.zip -d /usr/local/bin/
-        sudo chmod +x /usr/local/bin/chromedriver
+        
+        # Download e instalação
+        wget -N https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip -P ~/tmp
+        unzip ~/tmp/chromedriver_linux64.zip -d ~/tmp
+        sudo mv -f ~/tmp/chromedriver /usr/local/bin/chromedriver
+        sudo chown root:root /usr/local/bin/chromedriver
+        sudo chmod 0755 /usr/local/bin/chromedriver
+        
+        # Verifica a instalação
         chromedriver --version
         
     - name: Install dependencies

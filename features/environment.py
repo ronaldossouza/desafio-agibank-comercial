@@ -9,15 +9,16 @@ def before_scenario(context, scenario):
     
     # Configura opções do Chrome
     options = Options()
-    # Removido o argumento --user-data-dir para evitar conflitos
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    # Se desejar executar em modo headless (comum em CI), descomente a linha abaixo:
-    # options.add_argument("--headless")
+    # Ativar modo headless em ambientes de CI pode evitar problemas gráficos
+    options.add_argument("--headless")
     
+    # Não especificamos o argumento --user-data-dir para evitar conflitos
     context.driver = webdriver.Chrome(service=service, options=options)
     context.driver.maximize_window()
 
 def after_scenario(context, scenario):
     """Executa DEPOIS de cada cenário."""
-    context.driver.quit()
+    if hasattr(context, 'driver'):
+        context.driver.quit()

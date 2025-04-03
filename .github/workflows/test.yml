@@ -23,53 +23,67 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y wget curl unzip
-    
+
     - name: Install Chrome and ChromeDriver
       run: |
+        # Função para obter a versão do ChromeDriver compatível
+        get_chromedriver_version() {
+            local chrome_version=$1
+            local major_version=$(echo "$chrome_version" | cut -d'.' -f1)
+            
+            # Primeiro, tenta a versão específica
+            local version=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$major_version")
+            
+            # Se falhar, usa a versão mais recente
+            if [ -z "$version" ]; then
+                version=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE")
+            fi
+            
+            echo "$version"
+        }
+
         # Instala Chrome
         sudo apt-get update
         sudo apt-get install -y google-chrome-stable
 
         # Obtém a versão do Chrome
-        CHROME_VERSION=$(google-chrome --version | cut -d' ' -f3 | cut -d'.' -f1)
+        CHROME_VERSION=$(google-chrome --version | cut -d' ' -f3)
+        CHROME_MAJOR_VERSION=$(echo "$CHROME_VERSION" | cut -d'.' -f1)
         echo "Detected Chrome version: $CHROME_VERSION"
 
-        # Tenta múltiplas estratégias para obter o ChromeDriver
-        # Estratégia 1: Tenta versão específica
-        CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION")
+        # Obtém a versão do ChromeDriver
+        CHROMEDRIVER_VERSION=$(get_chromedriver_version "$CHROME_VERSION")
 
-        # Estratégia 2: Se falhar, usa a versão mais recente
+        # Verifica se conseguiu obter a versão
         if [ -z "$CHROMEDRIVER_VERSION" ]; then
-            echo "Specific ChromeDriver version not found. Falling back to latest."
-            CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE")
-        fi
-
-        # Verifica se ainda não encontrou uma versão
-        if [ -z "$CHROMEDRIVER_VERSION" ]; then
-            echo "Error: Could not determine ChromeDriver version"
+            echo "Erro: Não foi possível determinar a versão do ChromeDriver"
             exit 1
         fi
 
         echo "Installing ChromeDriver version: $CHROMEDRIVER_VERSION"
 
-        # Download e instalação
+        # Cria diretório temporário
         mkdir -p ~/tmp
-        wget -N "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip" -P ~/tmp
 
-        # Verifica se o download foi bem-sucedido
-        if [ ! -f ~/tmp/chromedriver_linux64.zip ]; then
-            echo "Error: ChromeDriver download failed"
+        # Download do ChromeDriver
+        wget -q "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip" -O ~/tmp/chromedriver.zip
+
+        # Verifica o download
+        if [ ! -f ~/tmp/chromedriver.zip ]; then
+            echo "Erro: Download do ChromeDriver falhou"
             exit 1
         fi
 
-        # Descompacta e move
-        unzip -o ~/tmp/chromedriver_linux64.zip -d ~/tmp
+        # Descompacta
+        unzip -q ~/tmp/chromedriver.zip -d ~/tmp
+
+        # Move para o diretório correto
         sudo mv -f ~/tmp/chromedriver /usr/local/bin/chromedriver
         sudo chown root:root /usr/local/bin/chromedriver
         sudo chmod 0755 /usr/local/bin/chromedriver
 
         # Limpa arquivos temporários
-        rm -f ~/tmp/chromedriver_linux64.zip
+        rm -f ~/tmp/chromedriver.zip
 
         # Verifica a instalação
         chromedriver --version

@@ -98,7 +98,7 @@ jobs:
         
     - name: Install test dependencies
       run: |
-        pip install behave selenium
+        pip install behave selenium webdriver_manager
         
     - name: Run tests
       run: |

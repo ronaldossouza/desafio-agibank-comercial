@@ -31,10 +31,10 @@ jobs:
             local chrome_version=$1
             local major_version=$(echo "$chrome_version" | cut -d'.' -f1)
             
-            # Primeiro, tenta a versão específica
-            local version=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$major_version")
+            # Tenta obter a versão específica com curl -fs, retornando vazio em caso de erro
+            local version=$(curl -fs "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$major_version" || echo "")
             
-            # Se falhar, usa a versão mais recente
+            # Se não obteve a versão, usa a versão mais recente
             if [ -z "$version" ]; then
                 version=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE")
             fi

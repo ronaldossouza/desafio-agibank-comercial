@@ -9,7 +9,7 @@ import time
 def step_impl(context, url):
     """Acessa a URL do blog."""
     context.driver.get(url)
-    WebDriverWait(context.driver, 10).until(
+    WebDriverWait(context.driver, 15).until(
         EC.presence_of_element_located((By.TAG_NAME, "body"))
     )
 
@@ -17,7 +17,7 @@ def step_impl(context, url):
 def step_click_search_icon(context):
     """Clica no ícone de lupa para abrir o campo de pesquisa."""
     # Aguarda para garantir que a página carregou completamente
-    time.sleep(8)
+    time.sleep(15)
     
     # Localiza o ícone de lupa
     search_icon = context.driver.find_element(By.CSS_SELECTOR, "a.slide-search.astra-search-icon")
@@ -26,7 +26,7 @@ def step_click_search_icon(context):
     context.driver.execute_script("arguments[0].click();", search_icon)
     
     # Aguarda para que o campo de busca fique visível
-    time.sleep(8)
+    time.sleep(10)
 
 @when(u'insiro "{texto}" no campo de busca')
 def step_impl(context, texto):

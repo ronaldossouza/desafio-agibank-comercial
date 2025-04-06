@@ -11,7 +11,7 @@ O projeto implementa dois cenários de teste:
 1. **Pesquisar artigo por texto exato e validar resultado** - Verifica se ao pesquisar por um texto específico são exibidos resultados relacionados.
 2. **Pesquisar por termo inexistente e validar mensagem de aviso** - Verifica se ao pesquisar por um termo improvável é exibida uma mensagem de ausência de resultados.
 
-## 🛠️ Tecnologias
+## 🛠️ Tecnologias Utilizadas
 
 - Python 3.x
 - Behave (BDD - Behavior Driven Development)
